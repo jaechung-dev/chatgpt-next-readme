@@ -164,7 +164,7 @@ SNS_API(1-n) .... =
 	•	orders.findOne, orders.update, stock.getById, stock.reserve, pickupDelivery.create …
 	•	Tools enforce company + form scoping and validation
 
-## Safety/Guardrails
+### Safety/Guardrails
 	•	Tool results are summarized; PII is masked in logs
 	•	All write operations require explicit operator confirmation in UI
 
@@ -184,12 +184,11 @@ SNS_API(1-n) .... =
 
 ⸻
 
-@@ API Reference (excerpt)
+## API Reference 
 
 POST /api/orders/:formId
 
 Create an order and reserve stock in a transaction.
-
 
 Request (JSON)
 ```json
