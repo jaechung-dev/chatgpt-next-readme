@@ -1,10 +1,11 @@
-# Preorder E-Commerce Platform (Multi-Tenant, LLM-Enhanced)
+# AI-powered eCommerce customer service system
+## - supports multiple merchants
 
-## A Next.js 15 + React 19 application for running multi-tenant group-buy and preorder campaigns. Includes a Cart/Order drawer UX, MongoDB backend with transaction-safe stock reservation, and an LLM (ChatGPT)-enhanced Admin Panel for customer service and operations.
+### A Next.js 15 + React 19 application for running multi-tenant group-buy and preorder campaigns. Includes a Cart/Order drawer UX, MongoDB backend with transaction-safe stock reservation, and an LLM (ChatGPT)-enhanced Admin Panel for customer service and operations.
 
 ⸻
 
-## Highlights
+### Highlights
 	•	Multi-tenant routing: per-company and per-form isolation using path params
 	•	URLs: https://chatgptform.com/forms/order/:companyName/:formId (customer UI)
 	•	Data partitioning via companyName and preorderFormId on all product/order docs
@@ -48,79 +49,91 @@
 
 ## Project Structure
 
-src/
-  app/
-    api/
-      orders/
-        [id]/
-          route.ts                # POST create order + reserve stock
-    (pages, layouts, components)  # app router pages/layouts if any
-
-  components/
-    forms/
-      parts/                      # ProductDetails, CartContent, OrderContent, etc.
-      shared/
-        ProductImage.tsx
-      utils/
-        cartUtils.ts              # pricing, subtotal/total helpers
-    shared/
-      Drawer.tsx                  # bounded drawer implementation
-
-  lib/
-    dbConnect.ts                  # singleton DB connector (mongoose)
-
-  models/
-    Order.ts
-    Stock.ts
-
-  controllers/
-    orderController.ts
-    stockController.ts
-
-  stores/
-    useCartStore.ts
-    useDrawerStore.ts
-    useProductsStore.ts
-    useStockStore.ts
-
-  types.ts                        # Product, Order, etc.
-
-public/
-  images/
-    <companyName>/
-      <preorderFormId>/
-        <slug>.png                # e.g., jam-classic-grape-1.png
-
-
+```plaintext
+chatgpt-next/
+├── .github/
+│   └── workflows/              # CI/CD pipelines
+├── public/
+│   └── images/                 # static assets
+│       └── <company>/<formId>/<product>.png
+├── src/
+│   ├── app/                    # Next.js App Router (RSC + routes)
+│   │   ├── api/
+│   │   │   └── orders/[id]/    # API routes
+│   │   │       └── route.ts
+│   │   └── forms/
+│   │       └── order/[companyName]/[formId]/
+│   │           └── page.tsx    # entry for customer preorder form
+│   ├── components/
+│   │   ├── forms/
+│   │   │   ├── parts/          # ProductDetails, CartContent, etc.
+│   │   │   ├── shared/         # ProductImage, StockBadgeOverlay
+│   │   │   └── utils/          # cartUtils.ts, etc.
+│   │   └── shared/             # Drawer, modal, generic UI
+│   ├── lib/                    # shared libs
+│   │   ├── dbConnect.ts        # MongoDB singleton
+│   │   └── i18n.ts             # translations
+│   ├── models/                 # Mongoose models
+│   │   ├── Order.ts
+│   │   └── Stock.ts
+│   ├── controllers/            # business logic (MVC style)
+│   │   ├── orderController.ts
+│   │   └── stockController.ts
+│   ├── stores/                 # Zustand stores
+│   │   ├── useCartStore.ts
+│   │   ├── useDrawerStore.ts
+│   │   ├── useProductsStore.ts
+│   │   └── useStockStore.ts
+│   └── types.ts                # Product, Order, shared interfaces
+├── .eslintrc.js / eslint.config.js
+├── package.json
+├── tsconfig.json
+├── Dockerfile
+└── README.md
+```
 ⸻
 
-## Environment Variables
+## Environment Variables(.env.local, .env.production)
 
-Create .env.local in the project root.
+```json
+# Server
+NEXT_PUBLIC_BASE_URL=
+NEXT_PUBLIC_IMAGE_BASE_URL=
 
-# Database
-MONGODB_URI="mongodb+srv://..."
+# Socket
+NEXT_PUBLIC_SOCKET_URL=
 
-# Admin Auth (temporary, for /admin basic auth)
-ADMIN_USER="admin"
-ADMIN_PASS="secret"
+# DB
+MONGODB_URI=
+REDIS_URL=
 
-# LLM / ChatGPT
-OPENAI_API_KEY="sk-..."
-# Optional: if you proxy tools/server
-MCP_SERVER_URL="https://.../mcp"
+# AWS
+AWS_REGION=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+NEXT_PUBLIC_AWS_LAMBDA_END_POINT=
+S3_BASE_URL=
 
-# Public runtime configs (readable on client if NEXT_PUBLIC_*)
-NEXT_PUBLIC_AWS_LAMBDA_END_POINT="https://..."
+# Email
+LOCAL_EMAIL=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=
+MAIL_TO_ADMIN=
 
-Keep secrets out of VCS. Prefer Secrets Manager for production.
+# 3rd party API
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+SNS_API(1-n) .... = 
+```
 
 ⸻
 
 ## Multi-Tenant Model
 
 ### Routing
-	•	Customer UI: https://chatgptform.com/forms/order/:companyName/:formId
+	•	Customer UI: https://chatgptform.com/forms/order/:companyname/:formId
 	•	Example: https://chatgptform.com/forms/order/acme/68909461e93e8196b0fd577a
 
 ### Data Partitioning
@@ -134,33 +147,13 @@ Keep secrets out of VCS. Prefer Secrets Manager for production.
 
 ⸻
 
-## LLM Admin Panel
+## LLM supported Admin Panel
 
 ### Route: /admin
 
-### Auth (temporary, fast path)
-Use Next.js middleware Basic Auth:
+### Auth (Cognito, JWT)
 
-```js
-// src/middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function middleware(req: NextRequest) {
-  if (!req.nextUrl.pathname.startsWith('/admin')) return NextResponse.next();
-
-  const auth = req.headers.get('authorization');
-  const expected = 'Basic ' + Buffer.from(`${process.env.ADMIN_USER}:${process.env.ADMIN_PASS}`).toString('base64');
-  if (auth === expected) return NextResponse.next();
-
-  return new NextResponse('Auth required', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Admin"' },
-  });
-}
-```
-
-## Capabilities
+### Capabilities
 	•	Chat console for operators with:
 	•	Order lookup by email/mobile/token
 	•	Stock checks and adjustments (guarded)
@@ -176,31 +169,6 @@ export function middleware(req: NextRequest) {
 	•	All write operations require explicit operator confirmation in UI
 
 ⸻
-
-## Development
-
-### Install & Run
-
-```bssh
-npm install
-npm run dev
-```
-
-App: http://localhost:3000
-
-Lint/Format
-
-```bash
-npm run lint
-npm run format
-```
-
-Build/Start
-
-```bash
-npm run build
-npm run start
-```
 
 ## DB Connection Pattern
 	•	Use a single dbConnect() (singleton) everywhere
@@ -275,9 +243,6 @@ Response
 	•	Progressive Web App (PWA) – offline cart support and installable app experience
 
 
-
-
-
 ## Deployment Artifacts (ECS Task Definitions)
 
 When deploying to ECS Fargate, you may generate task definition files (e.g., td.json, td-current.json, td-preorder.json, td-register.json).
@@ -326,9 +291,8 @@ aws ecs register-task-definition --cli-input-json file://dist/td.json
 
 ## Deployment Artifacts
 
+### Option 1 — Container-centric 
 1) GitHub Actions + Docker + ECS Fargate + S3 + CloudFront + MongoDB Atlas + Redis + Cognito + API Gateway
-
-### Option 1 — Container-centric (simple, durable)
 
 | Capability / Integration          | Trigger Style                         | Runs Where                               | Notes (incl. Auth/JWT) |
 |----------------------------------|---------------------------------------|------------------------------------------|-------------------------|
@@ -342,9 +306,8 @@ aws ecs register-task-definition --cli-input-json file://dist/td.json
 
 
 
-
-2) GitHub Actions + Docker + ECS Fargate + AWS Lambda (workers) + API Gateway + EventBridge + SQS
 ### Option 2 — Hybrid (Fargate for web, Lambda for async)
+2) GitHub Actions + Docker + ECS Fargate + AWS Lambda (workers) + API Gateway + EventBridge + SQS
 
 | Capability / Integration           | Trigger Style                         | Runs Where                                         | Notes (incl. Auth/JWT) |
 |-----------------------------------|---------------------------------------|----------------------------------------------------|-------------------------|
@@ -356,8 +319,9 @@ aws ecs register-task-definition --cli-input-json file://dist/td.json
 | Open API (3rd-party)              | Webhook or on-demand                  | Lambda (short) or Fargate worker                   | Choose by duration/CPU. |
 | Authentication (Cognito)          | Login/refresh                         | Cognito User Pool + API GW Authorizer / middleware | JWT verified at API GW or app. |
 
-3) GitHub Actions + SST (or CDK) + All-Serverless (Lambda@Edge) + CloudFront + S3 + API Gateway + Cognito
+
 ### Option 3 — Serverless-first (Lambda@Edge + API Gateway)
+3) GitHub Actions + SST (or CDK) + All-Serverless (Lambda@Edge) + CloudFront + S3 + API Gateway + Cognito
 
 | Capability / Integration           | Trigger Style                         | Runs Where                                   | Notes (incl. Auth/JWT) |
 |-----------------------------------|---------------------------------------|----------------------------------------------|-------------------------|
@@ -385,7 +349,7 @@ aws ecs register-task-definition --cli-input-json file://dist/td.json
 | **Best fit**                      | Long-running workloads, predictable traffic, tight DB coupling | Mixed workloads (sync on Fargate, async/offload via Lambda) | Global edge delivery, bursty traffic, low infra mgmt |
 
 
-Add-on notes (applies to all options)
+#### Add-on notes (applies to all options)
 	•	Secrets: AWS Secrets Manager / SSM Parameter Store.
 	•	Observability: CloudWatch Logs, X-Ray; consider OpenTelemetry to Datadog/New Relic.
 	•	Images: ECR for containers; S3 for product images; optional CloudFront image optimization or Lambda@Edge transforms.
