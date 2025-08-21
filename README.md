@@ -51,29 +51,45 @@
 src/
   app/
     api/
-      orders/[id]/route.ts       # POST create order + reserve stock
-    (pages, layouts, components)
+      orders/
+        [id]/
+          route.ts                # POST create order + reserve stock
+    (pages, layouts, components)  # app router pages/layouts if any
+
   components/
     forms/
-      parts/                     # ProductDetails, CartContent, etc.
-      shared/ProductImage.tsx
-      utils/cartUtils.ts         # pricing, subtotal/total helpers
-    shared/Drawer.tsx            # bounded drawer implementation
+      parts/                      # ProductDetails, CartContent, OrderContent, etc.
+      shared/
+        ProductImage.tsx
+      utils/
+        cartUtils.ts              # pricing, subtotal/total helpers
+    shared/
+      Drawer.tsx                  # bounded drawer implementation
+
   lib/
-    dbConnect.ts
-    models/Order.ts
-    models/Stock.ts
-    controllers/
-      orderController.ts
-      stockController.ts
+    dbConnect.ts                  # singleton DB connector (mongoose)
+
+  models/
+    Order.ts
+    Stock.ts
+
+  controllers/
+    orderController.ts
+    stockController.ts
+
   stores/
     useCartStore.ts
     useDrawerStore.ts
     useProductsStore.ts
     useStockStore.ts
-  types.ts                       # Product, Order, etc.
+
+  types.ts                        # Product, Order, etc.
+
 public/
-  images/<companyName>/<preorderFormId>/<slug>.png
+  images/
+    <companyName>/
+      <preorderFormId>/
+        <slug>.png                # e.g., jam-classic-grape-1.png
 
 
 ⸻
