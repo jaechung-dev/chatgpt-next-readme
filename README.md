@@ -95,7 +95,7 @@ chatgpt-next/
 
 ## Environment Variables(.env.local, .env.production)
 
-```plain
+```plaintext
 # Server
 NEXT_PUBLIC_BASE_URL=
 NEXT_PUBLIC_IMAGE_BASE_URL=
