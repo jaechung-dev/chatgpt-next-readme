@@ -1,46 +1,42 @@
-# AI-powered eCommerce customer service system
-## - supports multiple merchants
+# AI-powered eCommerce customer service system - supports multiple merchants
 
-### A Next.js 15 + React 19 application for running multi-tenant group-buy and preorder campaigns. Includes a Cart/Order drawer UX, MongoDB backend with transaction-safe stock reservation, and an LLM (ChatGPT)-enhanced Admin Panel for customer service and operations.
+### A Next.js 15 + React 19 application for running multi-tenant group-buy form-based order and campaigns. Includes a Cart/Order drawer UX, MongoDB backend with transaction-safe real-time stock handling, and an LLM (ChatGPT)-enhanced Admin Panel for customer service and operations.
 
 ⸻
 
 ### Highlights
-	•	Multi-tenant routing: per-company and per-form isolation using path params
+	•	Multi-tenant routing: per-company and per-form isolation
 	•	URLs: https://chatgptform.com/forms/order/:companyName/:formId (customer UI)
 	•	Data partitioning via companyName and preorderFormId on all product/order docs
-	•	Asset paths: images/<companyName>/<preorderFormId>/<slug>.png
+	•	Asset location: S3
 	•	LLM Admin Panel (/admin)
 	•	ChatGPT-assisted customer support: order lookup, stock checks, status updates, canned responses
 	•	MCP-style tool calls (serverless) to read/write domain data (orders, stock, pickups)
 	•	Channel intents: Instagram Messenger, KakaoTalk, SMS (extensible)
-	•	Guardrails and summarization for agent replies
-	•	Drawer UX: Cart, Product Detail, and Order flows using a bounded drawer pattern
-	•	Stock signals: Live stock badge overlay; transactional reservation on checkout
-	•	Serverless: API routes under /api, deployable to AWS Lambda + CloudFront + S3
-	•	Type-safe: Shared types.ts, utility helpers for pricing and cart math
+	•	Drawer UX: Cart page, Product Detail page, and Order flows using a bounded drawer pattern
+	•	Realtime Stock signals: Websocket
+	•	Serverless: API routes under /api, deployable to ECS on Fargate + CloudFront + S3
+	•	Type-safe: Shared types.ts, utility helpers for pricing and cart utility
 
 ⸻
 
 ## Tech Stack
 
 ### Frontend
-	•	Next.js 15 (App Router, React Server Components)
-	•	React 19 (e.g., useOptimistic, useFormState)
+	•	Next.js 15
+	•	React 19
 	•	Tailwind CSS
-	•	Zustand stores: useCartStore, useDrawerStore, useProductsStore, useStockStore
-	•	clsx for conditional classes; minimal headless UI components
+	•	Zustand stores
 	•	i18n via t() helper
 
 ### Backend
-	•	Next.js API Routes following a Model–Controller–Service (MCS) pattern  
+	•	Next.js API Routes following a Model–Controller–Service pattern  
     •	Node.js Express server for WebSocket communication
     •   MongoDB Atlas + Mongoose, Redis
-	•	Transactional controllers: orderController, stockController
-	•	Singleton DB connector: dbConnect() to prevent multi-client/session errors
+	•	Transactional controllers
 
 ### Infra / Integrations
-	•	AWS Lambda, CloudFront, S3, Fargate
+	•	CloudFront, S3, Fargate
 	•	GitHub Actions (build/lint/deploy)
 	•	ChatGPT integration (server-side) for admin panel
 	•	MCP-style tool layer for LLM actions
@@ -57,13 +53,13 @@ chatgpt-next/
 │   └── images/                 # static assets
 │       └── <company>/<formId>/<product>.png
 ├── src/
-│   ├── app/                    # Next.js App Router (RSC + routes)
+│   ├── app/                    # Next.js App Router 
 │   │   ├── api/
 │   │   │   └── orders/[id]/    # API routes
 │   │   │       └── route.ts
 │   │   └── forms/
 │   │       └── order/[companyName]/[formId]/
-│   │           └── page.tsx    # entry for customer preorder form
+│   │           └── page.tsx    # entry for customer order form
 │   ├── components/
 │   │   ├── forms/
 │   │   │   ├── parts/          # ProductDetails, CartContent, etc.
@@ -85,49 +81,11 @@ chatgpt-next/
 │   │   ├── useProductsStore.ts
 │   │   └── useStockStore.ts
 │   └── types.ts                # Product, Order, shared interfaces
-├── .eslintrc.js / eslint.config.js
 ├── package.json
 ├── tsconfig.json
 ├── Dockerfile
 └── README.md
 ```
-⸻
-
-## Environment Variables(.env.local, .env.production)
-
-```plaintext
-# Server
-NEXT_PUBLIC_BASE_URL=
-NEXT_PUBLIC_IMAGE_BASE_URL=
-
-# Socket
-NEXT_PUBLIC_SOCKET_URL=
-
-# DB
-MONGODB_URI=
-REDIS_URL=
-
-# AWS
-AWS_REGION=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-NEXT_PUBLIC_AWS_LAMBDA_END_POINT=
-S3_BASE_URL=
-
-# Email
-LOCAL_EMAIL=
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USER=
-SMTP_PASS=
-MAIL_FROM=
-MAIL_TO_ADMIN=
-
-# 3rd party API
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
-SNS_API(1-n) .... = 
-```
-
 ⸻
 
 ## Multi-Tenant Model
@@ -158,7 +116,6 @@ SNS_API(1-n) .... =
 	•	Order lookup by email/mobile/token
 	•	Stock checks and adjustments (guarded)
 	•	Create/modify order notes, pickup/delivery details
-	•	Generate polite, translated customer replies (Korean/English)
 	•	Auto-summaries of long customer threads
 	•	MCP-style Tools (serverless):
 	•	orders.findOne, orders.update, stock.getById, stock.reserve, pickupDelivery.create …
@@ -282,15 +239,11 @@ sed \
 aws ecs register-task-definition --cli-input-json file://dist/td.json
 ```
 
-```bash
-# Generated task definitions
-/td*.json
-/dist/
-```
+
 
 ## Deployment Artifacts
 
-### Option 1 — Container-centric 
+### Container-centric 
 1) GitHub Actions + Docker + ECS Fargate + S3 + CloudFront + MongoDB Atlas + Redis + Cognito + API Gateway
 
 | Capability / Integration          | Trigger Style                         | Runs Where                               | Notes (incl. Auth/JWT) |
@@ -303,53 +256,3 @@ aws ecs register-task-definition --cli-input-json file://dist/td.json
 | Open API (3rd-party)             | Webhook or on-demand                  | Fargate                                   | Keep external API calls in app/worker container. |
 | Authentication (Cognito)         | Login/refresh                         | Cognito User Pool + app middleware        | JWT in httpOnly cookies; multi-tenant claim check. |
 
-
-
-### Option 2 — Hybrid (Fargate for web, Lambda for async)
-2) GitHub Actions + Docker + ECS Fargate + AWS Lambda (workers) + API Gateway + EventBridge + SQS
-
-| Capability / Integration           | Trigger Style                         | Runs Where                                         | Notes (incl. Auth/JWT) |
-|-----------------------------------|---------------------------------------|----------------------------------------------------|-------------------------|
-| Next.js app (SSR/API)             | HTTPS                                 | ECS Fargate (service)                              | Verify Cognito **JWT** in app middleware. |
-| Stock control (reserve/decrement) | In-app call                           | Fargate (service)                                  | Keep transactional writes with web tier. |
-| Banking API — **webhook**         | Webhook                               | API GW → Lambda (short) → SQS → Fargate worker     | Lambda validates JWT (Authorizer), ack fast; worker does heavy work. |
-| Banking API — **polling/recon**   | Scheduled                             | EventBridge → Lambda (≤15m) or Fargate cron        | Use Lambda only if quick; otherwise Fargate. |
-| SMS phone verification (OTP)      | Outbound; receipt webhooks (optional) | Lambda (short) + **Redis**                         | Send via SNS/Twilio; OTP TTL in Redis; receipts via API GW → Lambda. |
-| Open API (3rd-party)              | Webhook or on-demand                  | Lambda (short) or Fargate worker                   | Choose by duration/CPU. |
-| Authentication (Cognito)          | Login/refresh                         | Cognito User Pool + API GW Authorizer / middleware | JWT verified at API GW or app. |
-
-
-### Option 3 — Serverless-first (Lambda@Edge + API Gateway)
-3) GitHub Actions + SST (or CDK) + All-Serverless (Lambda@Edge) + CloudFront + S3 + API Gateway + Cognito
-
-| Capability / Integration           | Trigger Style                         | Runs Where                                   | Notes (incl. Auth/JWT) |
-|-----------------------------------|---------------------------------------|----------------------------------------------|-------------------------|
-| Next.js app (SSR/ISR)             | HTTPS (global)                        | Lambda@Edge (SST/CDK `NextjsSite`)           | JWT verified in Edge/Lambda handlers; cookies httpOnly. |
-| Stock control (reserve/decrement) | API call                              | Lambda (short)                               | Keep < 15m; reuse Mongo client across invocations. |
-| Banking API — **webhook**         | Webhook                               | API GW → Lambda (short) → SQS                | Cognito Authorizer on API GW; async consumers drain SQS. |
-| Banking API — **polling/recon**   | Scheduled                             | EventBridge → Lambda (short) or Fargate cron | Pick by runtime length. |
-| SMS phone verification (OTP)      | Outbound; receipt webhooks (optional) | Lambda (short) + **Redis**                   | OTP TTL; receipt webhook via API GW → Lambda. |
-| Open API (3rd-party)              | Webhook or on-demand                  | Lambda (short); spill to Fargate if heavy    | Keep serverless unless duration/CPU requires containers. |
-| Authentication (Cognito)          | Login/refresh                         | Cognito User Pool + API GW/Lambda auth       | Use Cognito Authorizer or verify JWKS in code. |
-
-
-### Deployment Options Comparison
-
-| Capability / Integration           | Option 1 — Container-centric           | Option 2 — Hybrid (Fargate + Lambda)                    | Option 3 — Serverless-first (Lambda@Edge)            |
-|-----------------------------------|----------------------------------------|---------------------------------------------------------|------------------------------------------------------|
-| **Next.js app (SSR/API)**         | ECS Fargate service                    | ECS Fargate service                                     | Lambda@Edge (SST/CDK `NextjsSite`)                   |
-| **Stock control (reserve/decrement)** | Fargate service (in-app call)          | Fargate service (keep transactional writes local)       | Lambda (short) — < 15m txn limit; reuse Mongo client |
-| **Banking API — webhook**         | API GW → Fargate (or tiny Lambda forwarder) | API GW → Lambda (short) → SQS → Fargate worker          | API GW → Lambda (short) → SQS                        |
-| **Banking API — polling/recon**   | Fargate scheduled task (EventBridge)   | EventBridge → Lambda (≤15m) or Fargate cron             | EventBridge → Lambda (short) or Fargate cron         |
-| **SMS phone verification (OTP)**  | Fargate → SNS/Twilio; OTP in Redis     | Lambda (short) + Redis; receipts via API GW → Lambda    | Lambda (short) + Redis; receipts via API GW → Lambda |
-| **Open API (3rd-party)**          | Fargate container/worker               | Lambda (short) or Fargate worker (choose by duration)   | Lambda (short); spill to Fargate if heavy workloads  |
-| **Authentication (Cognito)**      | Cognito User Pool + app middleware     | Cognito User Pool + API GW Authorizer / middleware      | Cognito User Pool + API GW/Lambda Authorizer         |
-| **JWT handling**                  | Verify in app middleware (or ALB)      | Verified at API GW (Authorizer) or app                  | Verified at API GW or Lambda@Edge with JWKS          |
-| **Best fit**                      | Long-running workloads, predictable traffic, tight DB coupling | Mixed workloads (sync on Fargate, async/offload via Lambda) | Global edge delivery, bursty traffic, low infra mgmt |
-
-
-#### Add-on notes (applies to all options)
-	•	Secrets: AWS Secrets Manager / SSM Parameter Store.
-	•	Observability: CloudWatch Logs, X-Ray; consider OpenTelemetry to Datadog/New Relic.
-	•	Images: ECR for containers; S3 for product images; optional CloudFront image optimization or Lambda@Edge transforms.
-	•	Phone verification: SMS via SNS or a provider (Twilio), OTP stored in Redis with TTL.
